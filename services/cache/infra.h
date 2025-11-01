@@ -104,6 +104,11 @@ struct infra_data {
 	uint8_t timeout_AAAA;
 	/** timeouts counter for others */
 	uint8_t timeout_other;
+
+	/** number of queries sent to this server */
+	long long num_queries_sent;
+	/** number of responses received from this server */
+	long long num_responses_received;
 };
 
 /**
@@ -429,6 +434,50 @@ int infra_find_ratelimit(struct infra_cache* infra, uint8_t* name,
 int infra_ip_ratelimit_inc(struct infra_cache* infra,
 	struct sockaddr_storage* addr, socklen_t addrlen, time_t timenow,
 	int has_cookie, int backoff, struct sldns_buffer* buffer);
+
+/**
+ * Increment the query counter for a host.
+ * @param infra: infrastructure cache.
+ * @param addr: host address.
+ * @param addrlen: length of addr.
+ * @param name: zone name
+ * @param namelen: zone name length
+ * @param timenow: what time it is now.
+ */
+void infra_increment_queries_sent(struct infra_cache* infra,
+	struct sockaddr_storage* addr, socklen_t addrlen,
+	uint8_t* name, size_t namelen, time_t timenow);
+
+/**
+ * Increment the response counter for a host.
+ * @param infra: infrastructure cache.
+ * @param addr: host address.
+ * @param addrlen: length of addr.
+ * @param name: zone name
+ * @param namelen: zone name length
+ * @param timenow: what time it is now.
+ */
+void infra_increment_responses_received(struct infra_cache* infra,
+	struct sockaddr_storage* addr, socklen_t addrlen,
+	uint8_t* name, size_t namelen, time_t timenow);
+
+/**
+ * Get query and response statistics for a host.
+ * @param infra: infrastructure cache.
+ * @param addr: host address.
+ * @param addrlen: length of addr.
+ * @param name: zone name
+ * @param namelen: zone name length
+ * @param queries_sent: returned number of queries sent to this server
+ * @param responses_received: returned number of responses received from this server
+ * @param timenow: what time it is now.
+ * @return 1 if host found in cache, 0 otherwise.
+ */
+int infra_get_host_stats(struct infra_cache* infra,
+	struct sockaddr_storage* addr, socklen_t addrlen,
+	uint8_t* name, size_t namelen,
+	long long* queries_sent, long long* responses_received,
+	time_t timenow);
 
 /**
  * Get memory used by the infra cache.

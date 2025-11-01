@@ -401,6 +401,8 @@ data_entry_init(struct infra_cache* infra, struct lruhash_entry* e,
 	data->timeout_A = 0;
 	data->timeout_AAAA = 0;
 	data->timeout_other = 0;
+	data->num_queries_sent = 0;
+	data->num_responses_received = 0;
 }
 
 /** 
@@ -1122,5 +1124,82 @@ int infra_ip_ratelimit_inc(struct infra_cache* infra,
 
 	/* create */
 	infra_ip_create_ratedata(infra, addr, addrlen, timenow);
+	return 1;
+}
+
+void
+infra_increment_queries_sent(struct infra_cache* infra,
+	struct sockaddr_storage* addr, socklen_t addrlen,
+	uint8_t* name, size_t namelen, time_t timenow)
+{
+	struct lruhash_entry* e;
+	struct infra_data* data;
+
+	if(!infra || !addr || !name)
+		return;
+
+	e = infra_lookup_nottl(infra, addr, addrlen, name, namelen, 1);
+	if(!e) {
+		/* create new entry if it doesn't exist */
+		e = new_entry(infra, addr, addrlen, name, namelen, timenow);
+		if(!e)
+			return;
+		slabhash_insert(infra->hosts, e->hash, e, e->data, NULL);
+	}
+
+	data = (struct infra_data*)e->data;
+	data->num_queries_sent++;
+	lock_rw_unlock(&e->lock);
+}
+
+void
+infra_increment_responses_received(struct infra_cache* infra,
+	struct sockaddr_storage* addr, socklen_t addrlen,
+	uint8_t* name, size_t namelen, time_t timenow)
+{
+	struct lruhash_entry* e;
+	struct infra_data* data;
+
+	if(!infra || !addr || !name)
+		return;
+
+	e = infra_lookup_nottl(infra, addr, addrlen, name, namelen, 1);
+	if(!e) {
+		/* create new entry if it doesn't exist */
+		e = new_entry(infra, addr, addrlen, name, namelen, timenow);
+		if(!e)
+			return;
+		slabhash_insert(infra->hosts, e->hash, e, e->data, NULL);
+	}
+
+	data = (struct infra_data*)e->data;
+	data->num_responses_received++;
+	lock_rw_unlock(&e->lock);
+}
+
+int
+infra_get_host_stats(struct infra_cache* infra,
+	struct sockaddr_storage* addr, socklen_t addrlen,
+	uint8_t* name, size_t namelen,
+	long long* queries_sent, long long* responses_received,
+	time_t timenow)
+{
+	struct lruhash_entry* e;
+	struct infra_data* data;
+
+	if(!infra || !addr || !name || !queries_sent || !responses_received)
+		return 0;
+
+	e = infra_lookup_nottl(infra, addr, addrlen, name, namelen, 0);
+	if(!e) {
+		*queries_sent = 0;
+		*responses_received = 0;
+		return 0;
+	}
+
+	data = (struct infra_data*)e->data;
+	*queries_sent = data->num_queries_sent;
+	*responses_received = data->num_responses_received;
+	lock_rw_unlock(&e->lock);
 	return 1;
 }

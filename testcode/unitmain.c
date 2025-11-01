@@ -526,6 +526,36 @@ infra_test(void)
 			now, &vs, &edns_lame, &to) );
 	unit_assert( vs == 0 && to == init && edns_lame == 1 );
 
+	/* test server statistics */
+	{
+		long long queries_sent = 0, responses_received = 0;
+		
+		/* initially, stats should be zero (entry was expired and re-created) */
+		unit_assert( infra_get_host_stats(slab, &one, onelen, zone, zonelen,
+			&queries_sent, &responses_received, now) );
+		unit_assert( queries_sent == 0 && responses_received == 0 );
+		
+		/* increment query counter */
+		infra_increment_queries_sent(slab, &one, onelen, zone, zonelen, now);
+		unit_assert( infra_get_host_stats(slab, &one, onelen, zone, zonelen,
+			&queries_sent, &responses_received, now) );
+		unit_assert( queries_sent == 1 && responses_received == 0 );
+		
+		/* increment response counter */
+		infra_increment_responses_received(slab, &one, onelen, zone, zonelen, now);
+		unit_assert( infra_get_host_stats(slab, &one, onelen, zone, zonelen,
+			&queries_sent, &responses_received, now) );
+		unit_assert( queries_sent == 1 && responses_received == 1 );
+		
+		/* increment multiple times */
+		infra_increment_queries_sent(slab, &one, onelen, zone, zonelen, now);
+		infra_increment_queries_sent(slab, &one, onelen, zone, zonelen, now);
+		infra_increment_responses_received(slab, &one, onelen, zone, zonelen, now);
+		unit_assert( infra_get_host_stats(slab, &one, onelen, zone, zonelen,
+			&queries_sent, &responses_received, now) );
+		unit_assert( queries_sent == 3 && responses_received == 2 );
+	}
+
 	infra_delete(slab);
 	config_delete(cfg);
 }

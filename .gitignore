@@ -1,0 +1,49 @@
+# Build artifacts
+*.o
+*.lo
+*.la
+*.a
+*.so
+*.so.*
+.libs/
+.deps/
+
+# Generated files
+Makefile
+config.h
+config.log
+config.status
+libtool
+unbound.h
+util/configlexer.c
+
+# Executables
+unbound
+unbound-checkconf
+unbound-control
+unbound-host
+unbound-anchor
+unbound-control-setup
+
+# Documentation generated files
+doc/example.conf
+doc/libunbound.3
+doc/unbound.8
+doc/unbound-anchor.8
+doc/unbound-checkconf.8
+doc/unbound-control.8
+doc/unbound-host.1
+doc/unbound.conf.5
+
+# Config generated files
+contrib/libunbound.pc
+contrib/unbound.service
+contrib/unbound.socket
+contrib/unbound_portable.service
+dnscrypt/dnscrypt_config.h
+dnstap/dnstap_config.h
+smallapp/unbound-control-setup.sh
+
+# Temporary files
+*~
+*.swp

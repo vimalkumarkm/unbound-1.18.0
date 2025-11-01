@@ -2908,6 +2908,9 @@ serviced_udp_send(struct serviced_query* sq, sldns_buffer* buff)
 		serviced_udp_callback, sq);
 	if(!sq->pending)
 		return 0;
+	/* increment query sent counter for this server */
+	infra_increment_queries_sent(sq->outnet->infra, &sq->addr, sq->addrlen,
+		sq->zone, sq->zonelen, now);
 	return 1;
 }
 
@@ -3146,6 +3149,11 @@ serviced_tcp_callback(struct comm_point* c, void* arg, int error,
 	}
 	memcpy(&rep->remote_addr, &sq->addr, sq->addrlen);
 	rep->remote_addrlen = sq->addrlen;
+	/* increment response received counter for this server if no error */
+	if(error == NETEVENT_NOERROR) {
+		infra_increment_responses_received(sq->outnet->infra, &sq->addr,
+			sq->addrlen, sq->zone, sq->zonelen, *sq->outnet->now_secs);
+	}
 	serviced_callbacks(sq, error, c, rep);
 	return 0;
 }
@@ -3198,6 +3206,11 @@ serviced_tcp_send(struct serviced_query* sq, sldns_buffer* buff)
 	sq->pending = pending_tcp_query(sq, buff, timeout,
 		serviced_tcp_callback, sq);
 	sq->busy = 0;
+	if(sq->pending) {
+		/* increment query sent counter for this server */
+		infra_increment_queries_sent(sq->outnet->infra, &sq->addr,
+			sq->addrlen, sq->zone, sq->zonelen, *sq->outnet->now_secs);
+	}
 	return sq->pending != NULL;
 }
 
@@ -3381,6 +3394,9 @@ serviced_udp_callback(struct comm_point* c, void* arg, int error,
 		return 0;
 	}
 	/* yay! an answer */
+	/* increment response received counter for this server */
+	infra_increment_responses_received(outnet->infra, &sq->addr,
+		sq->addrlen, sq->zone, sq->zonelen, (time_t)now.tv_sec);
 	serviced_callbacks(sq, error, c, rep);
 	return 0;
 }

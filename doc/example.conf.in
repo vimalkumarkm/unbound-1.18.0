@@ -751,7 +751,24 @@ server:
 	# key-cache-slabs: 4
 
 	# the amount of memory to use for the negative cache.
-	# plain value in bytes or you can append k, m or G. default is "1Mb".
+	# Stores NXDOMAIN and NODATA responses; also stores NSEC/NSEC3 proofs
+	# when DNSSEC is enabled (especially with aggressive-nsec: yes).
+	# plain value in bytes or you can append k, m or G. default is "1m".
+	#
+	# Residential gateway sizing (~20 devices: 2 smart TVs, 4 mobile, mixed IoT):
+	#   64k  -- too small; will churn continuously under normal home-network
+	#            traffic (smart TV telemetry, mobile app background queries,
+	#            IoT cloud lookups), causing frequent upstream re-resolution.
+	#   1m   -- recommended starting point (the default); covers hundreds of
+	#            concurrent NXDOMAIN/NODATA entries comfortably.
+	#   2m-4m -- increase here if unbound-control stats shows a low cache-hit
+	#            ratio (total.num.cachehits / (cachehits + cachemiss) < 0.80)
+	#            or msg.cache.count is near capacity with high cachemiss counts.
+	#   256k -- minimum workable value only when RAM is very scarce; not
+	#           recommended for a 20-device home network.
+	#
+	# Monitoring with unbound-control:
+	#   unbound-control stats_noreset | grep -E 'cachehits|cachemiss|cache.count'
 	# neg-cache-size: 1m
 
 	# By default, for a number of zones a small default 'nothing here'

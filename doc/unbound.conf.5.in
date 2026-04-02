@@ -1399,6 +1399,69 @@ reasonable guess.
 Number of bytes size of the aggressive negative cache. Default is 1 megabyte.
 A plain number is in bytes, append 'k', 'm' or 'g' for kilobytes, megabytes
 or gigabytes (1024*1024 bytes in a megabyte).
+The negative cache stores NXDOMAIN (name does not exist) and NODATA (record
+type does not exist) responses.  It is used with or without DNSSEC; when
+DNSSEC is enabled (especially with
+.B aggressive\-nsec: yes
+) it additionally stores NSEC/NSEC3 denial\-of\-existence proofs, which
+increases per\-entry size and makes adequate sizing even more important.
+.PP
+.B Residential gateway sizing guidance (~20 devices):
+A deployment serving roughly 20 clients \(em for example 2 smart TVs,
+4 mobile devices, and a mix of IoT devices \(em will generate a
+substantial volume of negative responses.  Smart TVs perform frequent
+telemetry and ad\-network lookups; mobile devices send background traffic
+from many apps; IoT devices often query cloud endpoints that change or
+disappear.  In practice this results in hundreds to thousands of distinct
+NXDOMAIN/NODATA entries at any given time, easily overwhelming a 64 kB
+negative cache.  When the cache is full, older entries are evicted and
+those names must be re\-resolved upstream on the next query, negating
+the performance and bandwidth benefits of negative caching.
+.IP \(bu 2
+.B 64k is too small
+for this profile: it holds only a few hundred entries and will churn
+continuously under normal home\-network traffic.
+.IP \(bu 2
+.B Recommended range: 1m \(en 4m.
+Start with
+.B 1m
+(the default) and increase to
+.B 2m
+or
+.B 4m
+if monitoring shows a low cache\-hit ratio or high miss counts.
+A value of
+.B 256k
+is a workable compromise only when RAM is very scarce; anything below
+that is not recommended for a 20\-device home network.
+.PP
+.B Monitoring and tuning with unbound\-control stats:
+Run
+.B unbound\-control stats_noreset
+(or
+.B unbound\-control stats
+) and examine these counters:
+.IP \(bu 2
+.I total.num.cachehits
+and
+.I total.num.cachemiss
+\(em compute the hit ratio as
+cachehits / (cachehits + cachemiss).
+A ratio below ~0.80 for a residential gateway suggests the negative cache
+(or the main message/rrset caches) is too small.
+.IP \(bu 2
+.I msg.cache.count
+\(em the number of entries currently in the message cache (which includes
+negative answers).  If this count is near the cache capacity and
+cachemiss is high, increase
+.B neg\-cache\-size
+(and consider also increasing
+.B msg\-cache\-size
+).
+.IP \(bu 2
+.I total.num.prefetch
+\(em a high prefetch rate relative to cachehits is normal and healthy;
+it indicates Unbound is refreshing entries before they expire.
 .TP
 .B unblock\-lan\-zones: \fI<yes or no>
 Default is disabled.  If enabled, then for private address space,

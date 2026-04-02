@@ -828,6 +828,12 @@ struct ub_server_stats {
 	/** number of times neg cache records were used to generate NXDOMAIN
 	 * responses. */
 	long long num_neg_cache_nxdomain;
+	/** number of NXDOMAIN answers served directly from the message cache
+	 * (not via aggressive NSEC synthesis). */
+	long long num_neg_cache_msg_nxdomain;
+	/** number of NODATA (NOERROR/NODATA) answers served directly from
+	 * the message cache (not via aggressive NSEC synthesis). */
+	long long num_neg_cache_msg_noerror;
 	/** number of queries answered from edns-subnet specific data */
 	long long num_query_subnet;
 	/** number of queries answered from edns-subnet specific data, and

@@ -1371,6 +1371,7 @@ worker_handle_request(struct comm_point* c, void* arg, int error,
 	int need_drop = 0;
 	int is_expired_answer = 0;
 	int is_secure_answer = 0;
+	int from_msg_cache = 0;
 	int rpz_passthru = 0;
 	long long wait_queue_time = 0;
 	/* We might have to chase a CNAME chain internally, in which case
@@ -1856,6 +1857,7 @@ lookup_cache:
 						rpz_passthru,
 						original_edns_list);
 					if(!partial_rep) {
+						from_msg_cache = 1;
 						rc = 0;
 						regional_free_all(worker->scratchpad);
 						goto send_reply_rc;
@@ -1863,6 +1865,7 @@ lookup_cache:
 				} else if(!partial_rep) {
 					lock_rw_unlock(&e->lock);
 					regional_free_all(worker->scratchpad);
+					from_msg_cache = 1;
 					goto send_reply;
 				} else {
 					/* Note that we've already released the
@@ -1937,6 +1940,14 @@ send_reply_rc:
 	server_stats_insrcode(&worker->stats, c->buffer);
 	if(worker->stats.extended) {
 		if(is_secure_answer) worker->stats.ans_secure++;
+		if(from_msg_cache && sldns_buffer_limit(c->buffer) != 0) {
+			int r = (int)LDNS_RCODE_WIRE(sldns_buffer_begin(c->buffer));
+			if(r == LDNS_RCODE_NXDOMAIN)
+				worker->stats.num_neg_cache_msg_nxdomain++;
+			else if(r == LDNS_RCODE_NOERROR &&
+				LDNS_ANCOUNT(sldns_buffer_begin(c->buffer)) == 0)
+				worker->stats.num_neg_cache_msg_noerror++;
+		}
 	}
 #ifdef USE_DNSTAP
 	/*

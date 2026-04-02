@@ -1399,6 +1399,73 @@ reasonable guess.
 Number of bytes size of the aggressive negative cache. Default is 1 megabyte.
 A plain number is in bytes, append 'k', 'm' or 'g' for kilobytes, megabytes
 or gigabytes (1024*1024 bytes in a megabyte).
+.sp
+The negative cache stores NXDOMAIN (name does not exist) and NODATA (record
+type does not exist) responses so that repeated queries for the same
+non\-existent names are answered directly from cache without contacting
+upstream resolvers.  This reduces latency and upstream query load.
+.sp
+When the \fBvalidator\fR module is enabled and DNSSEC validation is active,
+the negative cache additionally stores NSEC and NSEC3 denial\-of\-existence
+records.  With \fBaggressive\-nsec: yes\fR (RFC 8198) enabled, Unbound can
+synthesise negative answers for names covered by a cached NSEC/NSEC3 range
+without issuing any upstream query, making a well\-sized negative cache
+particularly valuable.  Note that the validator module only counts
+\fBneg\-cache\-size\fR memory toward its total when at least one trust anchor
+is configured.
+.sp
+\fBResidential gateway sizing guidance\fR
+.br
+A home gateway (e.g. an AT&T residential CPE device) typically serves a
+handful of clients and sees a modest NXDOMAIN/NODATA rate.  The following
+reference points apply:
+.TP 4
+\(bu
+\fB64k (65,536 bytes)\fR \(em Marginal.  Each negative cache entry
+consumes roughly 150\-300 bytes of overhead (zone node, data node, RB\-tree
+links).  64k therefore holds on the order of 200\-400 entries.  Under
+normal home use this may be enough to cache the most\-repeated negative
+responses, but a transient burst of spam lookups, mobile\-app probing, or
+a DNS\-rebinding scan can exhaust it quickly, causing LRU eviction and
+repeated upstream queries.  Use only on severely memory\-constrained
+devices (< 32 MB RAM) where no larger allocation is practical.
+.TP 4
+\(bu
+\fB512k \(en 1m\fR \(em Recommended range for a typical residential
+gateway.  512 k comfortably holds several thousand negative entries and
+is a good balance between memory use and cache effectiveness for a
+household of 2\-8 devices.  1 m (the compiled\-in default) provides ample
+headroom for NSEC/NSEC3 records when DNSSEC and aggressive\-nsec are
+enabled, and is appropriate if system RAM allows it.
+.TP 4
+\(bu
+\fB4m and above\fR \(em Suited to small\-office or multi\-tenant scenarios
+with many clients, heavy DNSSEC validation workloads, or environments
+where aggressive NSEC synthesis is expected to deliver measurable
+upstream query reduction.
+.PP
+\fBMonitoring and tuning\fR
+.br
+Use \fBunbound\-control stats\fR (or \fBunbound\-control stats_noreset\fR) and
+examine the following counters to assess whether the current value is
+adequate:
+.TP 4
+\(bu
+\fBtotal.num.cachemiss\fR / \fBtotal.num.queries\fR \(em A rising miss
+rate suggests caches (including the negative cache) are under pressure.
+.TP 4
+\(bu
+\fBmem.mod.validator\fR \(em Memory used by the validator module, which
+includes the negative cache.  If this grows close to the sum of
+\fBkey\-cache\-size\fR and \fBneg\-cache\-size\fR, consider increasing
+\fBneg\-cache\-size\fR.
+.TP 4
+\(bu
+\fBnum.query.aggressive.NOERROR\fR, \fBnum.query.aggressive.NXDOMAIN\fR
+\(em Counts of answers synthesised from the negative cache via aggressive
+NSEC (RFC 8198).  Higher values indicate the negative cache is being used
+effectively.  Low values despite DNSSEC being active may indicate the
+cache is being evicted too aggressively.
 .TP
 .B unblock\-lan\-zones: \fI<yes or no>
 Default is disabled.  If enabled, then for private address space,

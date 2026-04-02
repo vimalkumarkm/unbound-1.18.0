@@ -1412,7 +1412,7 @@ A residential gateway serving roughly 20 devices (mix of smartphones, smart TVs,
 tablets, and other IoT devices) should use at least \fB1m\fR; \fB2m\fR\(en\fB4m\fR
 is recommended when DNSSEC with aggressive NSEC is enabled, since NSEC/NSEC3
 records add per\-entry overhead.  Increase the value if you observe a low
-negative cache hit rate via \fBunbound\-control stats_noreset\fR
+negative cache hit rate via \fBunbound\-control stats\-noreset\fR
 (see the \fBunbound\-control\fR(8) man page for how to compute the negative
 cache hit rate).
 .TP

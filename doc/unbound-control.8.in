@@ -755,25 +755,36 @@ hits.  Only output in \fIextended\-statistics\fR mode.
 The negative cache stores NXDOMAIN (the queried name does not exist) and NODATA
 (the name exists but the queried type does not) responses so that repeat queries
 are answered from cache rather than from upstream servers.  Two sources
-contribute to negative cache hits:
+contribute to answering negative queries without upstream recursion:
 .IP "1." 4
 \fBMessage cache\fR \(em tracked by \fInum.neg.cache.NXDOMAIN\fR and
-\fInum.neg.cache.nodata\fR.  Active with or without DNSSEC.
+\fInum.neg.cache.nodata\fR.  Active with or without DNSSEC.  These are also
+counted in \fInum.cachehits\fR.
 .IP "2." 4
 \fBAggressive NSEC synthesis\fR (RFC 8198) \(em tracked by
 \fInum.query.aggressive.NXDOMAIN\fR and \fInum.query.aggressive.NOERROR\fR.
 Requires DNSSEC validation and \fBaggressive\-nsec: yes\fR.  These are counted
-as cache misses by the main cache counters because they bypass the message
-cache, but they do avoid upstream recursion.
+as cache misses by the main cache counters (because they bypass the message
+cache), but they do avoid upstream recursion.
 .PP
-To compute the negative cache hit rate (requires \fBextended\-statistics: yes\fR
-in unbound.conf):
+The following formula computes the fraction of negative responses answered
+without going to an upstream server (requires \fBextended\-statistics: yes\fR
+in unbound.conf).  This is sometimes called the negative cache hit rate,
+though note that the aggressive\-NSEC component avoids recursion via synthesis
+rather than a direct message\-cache hit:
 .PP
 .nf
-neg_hits = num.neg.cache.NXDOMAIN + num.neg.cache.nodata
-           + num.query.aggressive.NXDOMAIN + num.query.aggressive.NOERROR
+neg_reuse = num.neg.cache.NXDOMAIN + num.neg.cache.nodata
+            + num.query.aggressive.NXDOMAIN + num.query.aggressive.NOERROR
 neg_total = num.answer.rcode.NXDOMAIN + num.answer.rcode.nodata
-neg_hit_rate = neg_hits / neg_total   (if neg_total > 0)
+neg_reuse_rate = neg_reuse / neg_total   (if neg_total > 0)
+.fi
+.PP
+To see the message\-cache contribution alone (works without DNSSEC):
+.PP
+.nf
+neg_msg_cache_hits = num.neg.cache.NXDOMAIN + num.neg.cache.nodata
+neg_msg_hit_rate = neg_msg_cache_hits / neg_total
 .fi
 .PP
 A low negative cache hit rate (e.g., below 50%) on a residential gateway

@@ -1396,9 +1396,25 @@ Must be set to a power of 2. Setting (close) to the number of cpus is a
 reasonable guess.
 .TP
 .B neg\-cache\-size: \fI<number>
-Number of bytes size of the aggressive negative cache. Default is 1 megabyte.
-A plain number is in bytes, append 'k', 'm' or 'g' for kilobytes, megabytes
-or gigabytes (1024*1024 bytes in a megabyte).
+Number of bytes size of the aggressive negative cache.  This cache stores
+NXDOMAIN (name does not exist) and NODATA (type does not exist) responses so
+that repeated negative lookups are served from cache rather than forwarded to
+upstream servers.  The negative cache is beneficial regardless of whether DNSSEC
+is in use; with DNSSEC and \fBaggressive\-nsec: yes\fR it additionally stores
+NSEC/NSEC3 denial\-of\-existence proofs which allow Unbound to synthesize
+answers for related names without any upstream query.
+.PP
+Default is 1 megabyte.  A plain number is in bytes, append 'k', 'm' or 'g'
+for kilobytes, megabytes or gigabytes (1024*1024 bytes in a megabyte).
+.PP
+Sizing guidance: 64\~KB is rarely sufficient except for very quiet environments.
+A residential gateway serving roughly 20 devices (mix of smartphones, smart TVs,
+tablets, and other IoT devices) should use at least \fB1m\fR; \fB2m\fR\(en\fB4m\fR
+is recommended when DNSSEC with aggressive NSEC is enabled, since NSEC/NSEC3
+records add per\-entry overhead.  Increase the value if you observe a low
+negative cache hit rate via \fBunbound\-control stats_noreset\fR
+(see the \fBunbound\-control\fR(8) man page for how to compute the negative
+cache hit rate).
 .TP
 .B unblock\-lan\-zones: \fI<yes or no>
 Default is disabled.  If enabled, then for private address space,

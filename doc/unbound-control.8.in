@@ -641,6 +641,8 @@ hence are considered a query replay.
 .I num.answer.rcode.NXDOMAIN
 The number of answers to queries, from cache or from recursion, that had the
 return code NXDOMAIN. Also printed for the other return codes.
+To determine how many NXDOMAIN responses were served from the message cache,
+see \fInum.neg.cache.NXDOMAIN\fR.
 .TP
 .I num.answer.rcode.nodata
 The number of answers to queries that had the pseudo return code nodata.
@@ -648,6 +650,8 @@ This means the actual return code was NOERROR, but additionally, no data was
 carried in the answer (making what is called a NOERROR/NODATA answer).
 These queries are also included in the num.answer.rcode.NOERROR number.
 Common for AAAA lookups when an A record exists, and no AAAA.
+To determine how many NODATA responses were served from the message cache,
+see \fInum.neg.cache.nodata\fR.
 .TP
 .I num.answer.secure
 Number of answers that were secure.  The answer validated correctly.
@@ -732,6 +736,51 @@ answered using cached data.
 The number of queries answered using cached NSEC records with NXDOMAIN RCODE.
 These queries would otherwise have been sent to the internet, but are now
 answered using cached data.
+.TP
+.I num.neg.cache.NXDOMAIN
+The number of NXDOMAIN answers served directly from the message cache.
+This counter is available regardless of whether DNSSEC is enabled, and counts
+only message\-cache hits (not aggressive NSEC synthesis).  Together with
+\fInum.query.aggressive.NXDOMAIN\fR it gives the total NXDOMAIN negative cache
+hits.  Only output in \fIextended\-statistics\fR mode.
+.TP
+.I num.neg.cache.nodata
+The number of NODATA (NOERROR/NODATA) answers served directly from the message
+cache.  This counter is available regardless of whether DNSSEC is enabled, and
+counts only message\-cache hits (not aggressive NSEC synthesis).  Together with
+\fInum.query.aggressive.NOERROR\fR it gives the total NODATA negative cache
+hits.  Only output in \fIextended\-statistics\fR mode.
+.SS "Negative cache hit rate"
+.PP
+The negative cache stores NXDOMAIN (the queried name does not exist) and NODATA
+(the name exists but the queried type does not) responses so that repeat queries
+are answered from cache rather than from upstream servers.  Two sources
+contribute to negative cache hits:
+.IP "1." 4
+\fBMessage cache\fR \(em tracked by \fInum.neg.cache.NXDOMAIN\fR and
+\fInum.neg.cache.nodata\fR.  Active with or without DNSSEC.
+.IP "2." 4
+\fBAggressive NSEC synthesis\fR (RFC 8198) \(em tracked by
+\fInum.query.aggressive.NXDOMAIN\fR and \fInum.query.aggressive.NOERROR\fR.
+Requires DNSSEC validation and \fBaggressive\-nsec: yes\fR.  These are counted
+as cache misses by the main cache counters because they bypass the message
+cache, but they do avoid upstream recursion.
+.PP
+To compute the negative cache hit rate (requires \fBextended\-statistics: yes\fR
+in unbound.conf):
+.PP
+.nf
+neg_hits = num.neg.cache.NXDOMAIN + num.neg.cache.nodata
+           + num.query.aggressive.NXDOMAIN + num.query.aggressive.NOERROR
+neg_total = num.answer.rcode.NXDOMAIN + num.answer.rcode.nodata
+neg_hit_rate = neg_hits / neg_total   (if neg_total > 0)
+.fi
+.PP
+A low negative cache hit rate (e.g., below 50%) on a residential gateway
+suggests that the \fBneg\-cache\-size\fR is too small and entries are being
+evicted before they can be reused.  As a rough sizing guide, a home network of
+roughly 20 devices should use at least \fBneg\-cache\-size: 1m\fR; 4\~MB or
+more is recommended if DNSSEC with aggressive NSEC is enabled.
 .TP
 .I num.query.subnet
 Number of queries that got an answer that contained EDNS client subnet data.

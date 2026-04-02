@@ -379,6 +379,13 @@ static void print_extended(struct ub_stats_info* s, int inhibit_zero)
 	PR_UL("num.rrset.bogus", s->svr.rrset_bogus);
 	PR_UL("num.query.aggressive.NOERROR", s->svr.num_neg_cache_noerror);
 	PR_UL("num.query.aggressive.NXDOMAIN", s->svr.num_neg_cache_nxdomain);
+	/* negative cache hits from message cache (works with or without DNSSEC) */
+	if(!inhibit_zero || s->svr.num_neg_cache_msg_nxdomain) {
+		PR_UL("num.neg.cache.NXDOMAIN", s->svr.num_neg_cache_msg_nxdomain);
+	}
+	if(!inhibit_zero || s->svr.num_neg_cache_msg_noerror) {
+		PR_UL("num.neg.cache.nodata", s->svr.num_neg_cache_msg_noerror);
+	}
 	/* threat detection */
 	PR_UL("unwanted.queries", s->svr.unwanted_queries);
 	PR_UL("unwanted.replies", s->svr.unwanted_replies);

@@ -751,7 +751,34 @@ server:
 	# key-cache-slabs: 4
 
 	# the amount of memory to use for the negative cache.
+	# The negative cache stores NXDOMAIN and NODATA responses so that
+	# repeated queries for non-existent names are answered from cache
+	# without contacting upstream resolvers.  When the validator module
+	# is active with at least one trust anchor, NSEC/NSEC3 denial-of-
+	# existence records are also stored here; with aggressive-nsec: yes
+	# (RFC 8198) Unbound can synthesise negative answers from these
+	# records without any upstream query.
+	#
 	# plain value in bytes or you can append k, m or G. default is "1Mb".
+	#
+	# Residential gateway sizing reference (e.g. AT&T CPE):
+	#   64k  -- Marginal (~200-400 entries). Only use on very
+	#            memory-constrained devices (< 32 MB RAM). A burst of
+	#            mistyped names, app probing, or a scan can exhaust it.
+	#   512k -- Recommended minimum for a typical home gateway serving
+	#            2-8 devices; holds several thousand negative entries.
+	#   1m   -- Default; good balance for DNSSEC + aggressive-nsec; use
+	#            this unless RAM is tight.
+	#   4m+  -- Small-office / multi-tenant / heavy DNSSEC workloads.
+	#
+	# Monitor with: unbound-control stats_noreset
+	#   total.num.cachemiss / total.num.queries -- rising miss rate
+	#     indicates cache pressure across all caches.
+	#   mem.mod.validator     -- validator memory (includes neg cache);
+	#     if near key-cache-size + neg-cache-size, increase the limit.
+	#   num.query.aggressive.NOERROR / num.query.aggressive.NXDOMAIN
+	#     -- aggressive-nsec hits from neg cache; low counts with DNSSEC
+	#     active may signal over-eviction.
 	# neg-cache-size: 1m
 
 	# By default, for a number of zones a small default 'nothing here'

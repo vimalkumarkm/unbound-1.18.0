@@ -371,6 +371,9 @@ static void print_extended(struct ub_stats_info* s, int inhibit_zero)
 	if(!inhibit_zero || s->svr.ans_rcode_nodata) {
 		PR_UL("num.answer.rcode.nodata", s->svr.ans_rcode_nodata);
 	}
+	/* negative cache hits from the message cache */
+	PR_UL("num.cachehit.rcode.NXDOMAIN", s->svr.ans_cachehit_nxdomain);
+	PR_UL("num.cachehit.rcode.nodata", s->svr.ans_cachehit_nodata);
 	/* iteration */
 	PR_UL("num.query.ratelimited", s->svr.queries_ratelimited);
 	/* validation */

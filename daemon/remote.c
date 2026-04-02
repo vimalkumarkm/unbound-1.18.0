@@ -1007,6 +1007,11 @@ print_ext(RES* ssl, struct ub_stats_info* s, int inhibit_zero)
 		if(!ssl_printf(ssl, "num.answer.rcode.nodata"SQ"%lu\n",
 			(unsigned long)s->svr.ans_rcode_nodata)) return 0;
 	}
+	/* negative cache hits from the message cache */
+	if(!ssl_printf(ssl, "num.cachehit.rcode.NXDOMAIN"SQ"%lu\n",
+		(unsigned long)s->svr.ans_cachehit_nxdomain)) return 0;
+	if(!ssl_printf(ssl, "num.cachehit.rcode.nodata"SQ"%lu\n",
+		(unsigned long)s->svr.ans_cachehit_nodata)) return 0;
 	/* iteration */
 	if(!ssl_printf(ssl, "num.query.ratelimited"SQ"%lu\n",
 		(unsigned long)s->svr.queries_ratelimited)) return 0;

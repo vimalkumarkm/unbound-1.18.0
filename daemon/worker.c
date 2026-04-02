@@ -800,6 +800,15 @@ answer_from_cache(struct worker* worker, struct query_info* qinfo,
 			error_encode(repinfo->c->buffer, LDNS_RCODE_SERVFAIL,
 				qinfo, id, flags, edns);
 		}
+		/* Track negative response cache hits (extended stats). */
+		if(worker->stats.extended) {
+			uint16_t rc = FLAGS_GET_RCODE(encode_rep->flags);
+			if(rc == LDNS_RCODE_NXDOMAIN)
+				worker->stats.ans_cachehit_nxdomain++;
+			else if(rc == LDNS_RCODE_NOERROR &&
+				encode_rep->an_numrrsets == 0)
+				worker->stats.ans_cachehit_nodata++;
+		}
 	}
 	/* cannot send the reply right now, because blocking network syscall
 	 * is bad while holding locks. */

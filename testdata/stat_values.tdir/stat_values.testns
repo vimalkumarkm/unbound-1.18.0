@@ -31,3 +31,23 @@ SECTION QUESTION
 SECTION ANSWER
 0ttl	0 IN	A 0.0.0.1
 ENTRY_END
+
+ENTRY_BEGIN
+MATCH opcode qtype qname
+REPLY QR AA NXDOMAIN
+ADJUST copy_id
+SECTION QUESTION
+nxtest	IN	A
+SECTION AUTHORITY
+example.com.	3600	IN	SOA	ns1.example.com. hostmaster.example.com. 1 3600 900 604800 3600
+ENTRY_END
+
+ENTRY_BEGIN
+MATCH opcode qtype qname
+REPLY QR AA NOERROR
+ADJUST copy_id
+SECTION QUESTION
+nodatatest	IN	AAAA
+SECTION AUTHORITY
+example.com.	3600	IN	SOA	ns1.example.com. hostmaster.example.com. 1 3600 900 604800 3600
+ENTRY_END

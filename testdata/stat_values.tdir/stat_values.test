@@ -420,6 +420,106 @@ rrset.cache.count=3
 infra.cache.count=2"
 
 
+echo
+echo "[ Check negative cache hit counter: NXDOMAIN first query (cache miss). ]"
+echo "> dig nxtest.example.com. (expect NXDOMAIN, cache miss)"
+dig @127.0.0.1 -p $UNBOUND_PORT nxtest.example.com. | tee outfile
+echo "> check answer"
+if grep "NXDOMAIN" outfile; then
+	echo "OK"
+else
+	end 1
+fi
+set_ignore_regex_stats "$STATS_IGNORE_DEFAULT
+^msg.cache.count=
+^rrset.cache.count=
+^infra.cache.count="
+check_stats "\
+total.num.queries=1
+total.num.cachemiss=1
+total.num.recursivereplies=1
+num.query.type.A=1
+num.query.class.IN=1
+num.query.opcode.QUERY=1
+num.query.flags.RD=1
+num.query.flags.AD=1
+num.query.edns.present=1
+num.query.udpout=1
+num.answer.rcode.NXDOMAIN=1"
+
+echo
+echo "[ Check negative cache hit counter: NXDOMAIN second query (cache hit). ]"
+echo "> dig nxtest.example.com. (expect NXDOMAIN, cache hit)"
+dig @127.0.0.1 -p $UNBOUND_PORT nxtest.example.com. | tee outfile
+echo "> check answer"
+if grep "NXDOMAIN" outfile; then
+	echo "OK"
+else
+	end 1
+fi
+check_stats "\
+total.num.queries=1
+total.num.cachehits=1
+num.query.type.A=1
+num.query.class.IN=1
+num.query.opcode.QUERY=1
+num.query.flags.RD=1
+num.query.flags.AD=1
+num.query.edns.present=1
+num.answer.rcode.NXDOMAIN=1
+num.cachehit.rcode.NXDOMAIN=1"
+
+echo
+echo "[ Check negative cache hit counter: NODATA first query (cache miss). ]"
+echo "> dig nodatatest.example.com. AAAA (expect NODATA, cache miss)"
+dig @127.0.0.1 -p $UNBOUND_PORT nodatatest.example.com. AAAA | tee outfile
+echo "> check answer"
+if grep "NOERROR" outfile; then
+	echo "OK"
+else
+	end 1
+fi
+check_stats "\
+total.num.queries=1
+total.num.cachemiss=1
+total.num.recursivereplies=1
+num.query.type.AAAA=1
+num.query.class.IN=1
+num.query.opcode.QUERY=1
+num.query.flags.RD=1
+num.query.flags.AD=1
+num.query.edns.present=1
+num.query.udpout=1
+num.answer.rcode.NOERROR=1
+num.answer.rcode.nodata=1"
+
+echo
+echo "[ Check negative cache hit counter: NODATA second query (cache hit). ]"
+echo "> dig nodatatest.example.com. AAAA (expect NODATA, cache hit)"
+dig @127.0.0.1 -p $UNBOUND_PORT nodatatest.example.com. AAAA | tee outfile
+echo "> check answer"
+if grep "NOERROR" outfile; then
+	echo "OK"
+else
+	end 1
+fi
+check_stats "\
+total.num.queries=1
+total.num.cachehits=1
+num.query.type.AAAA=1
+num.query.class.IN=1
+num.query.opcode.QUERY=1
+num.query.flags.RD=1
+num.query.flags.AD=1
+num.query.edns.present=1
+num.answer.rcode.NOERROR=1
+num.answer.rcode.nodata=1
+num.cachehit.rcode.nodata=1"
+
+# Restore default ignore regex
+set_ignore_regex_stats "$STATS_IGNORE_DEFAULT"
+
+
 # Bring the downstream DNS Cookies configured Unbound up
 kill_pid $UNBOUND_PID  # kill current Unbound
 echo ""

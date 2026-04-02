@@ -484,6 +484,8 @@ void server_stats_add(struct ub_stats_info* total, struct ub_stats_info* a)
 		total->svr.unwanted_replies += a->svr.unwanted_replies;
 		total->svr.unwanted_queries += a->svr.unwanted_queries;
 		total->svr.tcp_accept_usage += a->svr.tcp_accept_usage;
+		total->svr.ans_cachehit_nxdomain += a->svr.ans_cachehit_nxdomain;
+		total->svr.ans_cachehit_nodata += a->svr.ans_cachehit_nodata;
 #ifdef USE_CACHEDB
 		total->svr.num_query_cachedb += a->svr.num_query_cachedb;
 #endif
